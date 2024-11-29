@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络知识安全挑战</title>
+    <style>
+        /* 设置背景图片，覆盖整个页面 */
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('/static/2.jpg');  /* 替换为你的背景图片路径 */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* 中心容器 */
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* 标题样式 */
+        #main-title, #sub-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* 题目样式 */
+        .question {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: none;  /* 初始隐藏 */
+        }
+
+        /* 选项样式 */
+        .option {
+            width: 100%;
+            font-size: 18px;
+            padding: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            display: none;  /* 初始隐藏 */
+        }
+
+        /* 选项悬停效果 */
+        .option:hover {
+            background-color: #45a049;
+        }
+
+        /* 居中所有按钮 */
+        button {
+            display: block;
+            width: 100%;
+        }
+
+        /* 开始按钮 */
+        #start-first-level, #start-second-level {
+            font-size: 20px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+
+        /* 重置按钮 */
+        #reset-button {
+            font-size: 18px;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;  /* 初始隐藏 */
+        }
+
+        /* 得分区 */
+        #score {
+            font-size: 18px;
+            margin-top: 20px;
+            display: none;  /* 初始隐藏 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="main-title">网络知识安全挑战</h1>
+        <h3 id="sub-title">参与即可抽奖，通关挑战终极大奖！</h3>    
+
+        <!-- 题目区域 -->
+        <div id="quiz-area">
+            <div id="question" class="question"></div>
+            <div id="options"></div>
+        </div>
+
+        <!-- 分数区域 -->
+        <div id="score" class="score"></div>
+
+        <!-- 按钮区域 -->
+        <button id="start-first-level" onclick="startLevel('first')">开始挑战</button>
+        <button id="start-second-level" style="display:none;" onclick="startLevel('second')">恭喜获得抽奖一次，点击此按钮继续挑战赢取更多奖励</button>
+        <!-- 重置按钮 -->
+        <button id="reset-button" onclick="resetGame()">重置关卡</button>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentLevel = '';
+
+        // 启动游戏
+        function startLevel(level) {
+            currentLevel = level;
+            fetch(`/get_questions/${level}`)
+                .then(response => response.json())
+                .then(data => {
+                    questions = data;
+                    currentQuestionIndex = 0;
+                    score = 0;
+                    document.getElementById('start-first-level').style.display = 'none';
+                    document.getElementById('start-second-level').style.display = 'none';
+                    document.getElementById('reset-button').style.display = 'block';  // 显示重置按钮
+                    document.querySelector('.question').style.display = 'block';  // 显示题目
+                    document.getElementById('score').style.display = 'block';  // 显示分数区域
+                    document.getElementById('main-title').style.display = 'none';  // 隐藏标题
+                    document.getElementById('sub-title').style.display = 'none';  // 隐藏副标题
+                    loadNextQuestion();
+                });
+        }
+
+        // 加载下一道题目
+        function loadNextQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                let question = questions[currentQuestionIndex];
+                document.getElementById('question').innerText = question.question;
+                let optionsDiv = document.getElementById('options');
+                optionsDiv.innerHTML = '';
+                for (let key in question.options) {
+                    let optionButton = document.createElement('button');
+                    optionButton.classList.add('option');
+                    optionButton.innerText = key + ': ' + question.options[key];
+                    optionButton.onclick = function () { checkAnswer(key, question.answer) };
+                    optionsDiv.appendChild(optionButton);
+                    optionButton.style.display = 'block';  // 显示选项
+                }
+            } else {
+                endLevel();
+            }
+        }
+
+        // 检查答案
+        function checkAnswer(selectedOption, correctAnswer) {
+            if (selectedOption === correctAnswer) {
+                score++;
+            }
+            currentQuestionIndex++;
+            loadNextQuestion();  // 点击答案后自动进入下一题
+        }
+
+        // 结束关卡
+        function endLevel() {
+            let resultMessage = `得分: ${score}/${questions.length}`;
+            if (currentLevel === 'first' && score >= 5) {
+                resultMessage += " 第一关通过！";
+                document.getElementById('start-second-level').style.display = 'block';
+            } else if (currentLevel === 'second' && score >= 3) {
+                resultMessage += " 恭喜通关！";
+            } else {
+                resultMessage += " 未能通过。";
+            }
+            document.getElementById('question').innerText = resultMessage;
+            document.getElementById('options').innerHTML = '';
+            document.getElementById('main-title').style.display = 'block';  // 重新显示标题
+            document.getElementById('sub-title').style.display = 'block';  // 重新显示副标题
+        }
+
+        // 重置游戏
+        function resetGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('start-first-level').style.display = 'block'; // 重新显示开始按钮
+            document.getElementById('start-second-level').style.display = 'none';  // 隐藏第二关按钮
+            document.getElementById('question').style.display = 'none';  // 隐藏题目
+            document.getElementById('options').innerHTML = '';  // 清空选项
+            document.getElementById('score').style.display = 'none';   // 隐藏分数区域
+            document.getElementById('reset-button').style.display = 'none'; // 隐藏重置按钮
+            document.getElementById('main-title').style.display = 'block';  // 显示标题
+            document.getElementById('sub-title').style.display = 'block';  // 显示副标题
+        }
+    </script>
+</body>
+</html>
+
+
+
